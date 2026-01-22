@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Sinh viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .card { margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="text-center mb-4 text-primary">Hệ thống Quản lý Sinh viên</h2>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Thông tin sinh viên</h5>
+                </div>
+                <div class="card-body">
+                    <form id="studentForm">
+                        <input type="hidden" id="studentId">
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Họ và Tên</label>
+                            <input type="text" class="form-control" id="name" required placeholder="Nhập tên...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required placeholder="Nhập email...">
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100" id="saveBtn">Lưu Sinh viên</button>
+                        <button type="button" class="btn btn-secondary w-100 mt-2" onclick="resetForm()">Làm mới</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Danh sách sinh viên</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Họ Tên</th>
+                            <th>Email</th>
+                            <th style="width: 150px;">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody id="studentTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8080/students";
+
+    // 1. Load danh sách sinh viên khi trang vừa mở
+    document.addEventListener('DOMContentLoaded', loadStudents);
+
+    function loadStudents() {
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('studentTableBody');
+                tableBody.innerHTML = "";
+
+                data.forEach(student => {
+                    const row = `
+                        <tr>
+                            <td>${student.id}</td>
+                            <td>${student.name}</td>
+                            <td>${student.email}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" onclick="editStudent(${student.id})">Sửa</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteStudent(${student.id})">Xóa</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            })
+            .catch(error => {
+                console.error('Lỗi khi tải dữ liệu:', error);
+                alert('Không thể kết nối đến server. Vui lòng kiểm tra API!');
+            });
+    }
+
+    // 2. Xử lý Submit Form (Thêm hoặc Sửa)
+    document.getElementById('studentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('studentId').value;
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+
+        const studentData = { name, email };
+
+        if (id) {
+            // Cập nhật sinh viên
+            fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(studentData)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        loadStudents();
+                        resetForm();
+                        alert("Cập nhật thành công!");
+                    } else {
+                        alert("Cập nhật thất bại!");
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi:', error);
+                    alert("Có lỗi xảy ra khi cập nhật!");
+                });
+        } else {
+            // Thêm mới sinh viên
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(studentData)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        loadStudents();
+                        resetForm();
+                        alert("Thêm mới thành công!");
+                    } else {
+                        alert("Thêm mới thất bại!");
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi:', error);
+                    alert("Có lỗi xảy ra khi thêm mới!");
+                });
+        }
+    });
+
+    // 3. Xóa sinh viên
+    function deleteStudent(id) {
+        if (confirm("Bạn có chắc chắn muốn xóa sinh viên này?")) {
+            fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        loadStudents();
+                        alert("Xóa thành công!");
+                    } else {
+                        alert("Xóa thất bại!");
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi xóa:', error);
+                    alert("Có lỗi xảy ra khi xóa!");
+                });
+        }
+    }
+
+    // 4. Đổ dữ liệu lên form để sửa
+    function editStudent(id) {
+        fetch(`${API_URL}/${id}`)
+            .then(res => res.json())
+            .then(student => {
+                document.getElementById('studentId').value = student.id;
+                document.getElementById('name').value = student.name;
+                document.getElementById('email').value = student.email;
+
+                document.getElementById('saveBtn').innerText = "Cập nhật";
+                document.getElementById('saveBtn').classList.remove('btn-success');
+                document.getElementById('saveBtn').classList.add('btn-warning');
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                alert("Không thể tải thông tin sinh viên!");
+            });
+    }
+
+    // 5. Reset form về trạng thái thêm mới
+    function resetForm() {
+        document.getElementById('studentId').value = "";
+        document.getElementById('name').value = "";
+        document.getElementById('email').value = "";
+
+        document.getElementById('saveBtn').innerText = "Lưu Sinh viên";
+        document.getElementById('saveBtn').classList.remove('btn-warning');
+        document.getElementById('saveBtn').classList.add('btn-success');
+    }
+</script>
+
+</body>
+</html>
