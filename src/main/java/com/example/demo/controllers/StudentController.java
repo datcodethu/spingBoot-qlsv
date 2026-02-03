@@ -3,6 +3,7 @@ package com.example.demo.controllers;
 import com.example.demo.model.Student;
 import com.example.demo.services.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,5 +34,6 @@ public class StudentController {
     public void deleteStudent(@PathVariable int id) {
         studentService.deleteStudent(id);
     }
+
 
 }
